@@ -46,7 +46,7 @@ pub fn add_small_with_overflow<const I: usize, const J: usize>(accm: &mut [u32; 
     carry
 }
 
-pub fn montgomery_mul(out: &mut [u32; 69], in1: &[u32; 64], in2: &[u32; 64]) {
+pub fn montgomery_mul(out: &mut [u32; 69], in1: &[u32; 64], in2: &[u32; 64], always_reduce: bool) {
     const N: [u32; 128] = [
         3493812455u32,
         3529997461u32,
@@ -322,23 +322,33 @@ pub fn montgomery_mul(out: &mut [u32; 69], in1: &[u32; 64], in2: &[u32; 64]) {
         out[67] = 0;
     }
 
-    let mut u = [0u32; 64];
-
-    let mut borrow = 0u32;
-    for i in 0..16 {
-        for j in 0..4 {
-            let res = ((out[i * 4 + j] as u64).wrapping_add(0x100000000)).wrapping_sub(N[i * 8 + j] as u64).wrapping_sub(borrow as u64);
-            u[i * 4 + j] = (res & 0xffffffff) as u32;
-            borrow = 1u32.wrapping_sub((res >> 32) as u32);
+    if always_reduce {
+        let mut u = [0u32; 64];
+        let mut borrow = 0u32;
+        for i in 0..16 {
+            for j in 0..4 {
+                let res = ((out[i * 4 + j] as u64).wrapping_add(0x100000000)).wrapping_sub(N[i * 8 + j] as u64).wrapping_sub(borrow as u64);
+                u[i * 4 + j] = (res & 0xffffffff) as u32;
+                borrow = 1u32.wrapping_sub((res >> 32) as u32);
+            }
         }
-    }
-    let (_, borrow_bit) = out[64].overflowing_sub(borrow);
-    // u[64] = cur;
+        let (_, borrow_bit) = out[64].overflowing_sub(borrow);
+        // u[64] = cur;
 
-    // t > n
-    if borrow_bit == false {
-        for i in 0..64 {
-            out[i] = u[i];
+        // t > n
+        if borrow_bit == false {
+            for i in 0..64 {
+                out[i] = u[i];
+            }
+        }
+    } else if out[64] == 1 {
+        let mut borrow = 0u32;
+        for i in 0..16 {
+            for j in 0..4 {
+                let res = ((out[i * 4 + j] as u64).wrapping_add(0x100000000)).wrapping_sub(N[i * 8 + j] as u64).wrapping_sub(borrow as u64);
+                out[i * 4 + j] = (res & 0xffffffff) as u32;
+                borrow = 1u32.wrapping_sub((res >> 32) as u32);
+            }
         }
     }
 }

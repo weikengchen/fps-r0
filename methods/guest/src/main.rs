@@ -193,13 +193,14 @@ fn main() {
         let mut cur2_limbs = [0u32; 69];
 
         // cur = ^2
-        rsa::montgomery_mul(&mut cur_limbs, &sig_mont_limbs, &sig_mont_limbs);
+        rsa::montgomery_mul(&mut cur_limbs, &sig_mont_limbs, &sig_mont_limbs, false);
         // cur2 = ^4
         unsafe {
             rsa::montgomery_mul(
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
+                false
             );
         }
         // cur = ^8
@@ -208,6 +209,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
+                false
             );
         }
         // cur2 = ^16
@@ -216,6 +218,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
+                false
             );
         }
         // cur = ^32
@@ -224,6 +227,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
+                false
             );
         }
         // cur2 = ^64
@@ -232,6 +236,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
+                false
             );
         }
         // cur = ^128
@@ -240,6 +245,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
+                false
             );
         }
         // cur2 = ^256
@@ -248,6 +254,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
+                false
             );
         }
         // cur = ^512
@@ -256,6 +263,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
+                false
             );
         }
         // cur2 = ^1024
@@ -264,6 +272,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
+                false
             );
         }
         // cur = ^2048
@@ -272,6 +281,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
+                false
             );
         }
         // cur2 = ^4096
@@ -280,6 +290,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
+                false
             );
         }
         // cur = ^8192
@@ -288,6 +299,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
+                false
             );
         }
         // cur2 = ^16384
@@ -296,6 +308,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
+                false
             );
         }
         // cur = ^32768
@@ -304,6 +317,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
+                false
             );
         }
         // cur2 = ^65536
@@ -312,6 +326,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
+                false
             );
         }
         // cur = ^65537
@@ -320,6 +335,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 &sig_mont_limbs,
+                false
             );
         }
 
@@ -332,6 +348,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 &one,
+                true
             );
         }
         let msg = BigUint::from_slice(&cur2_limbs[0..64]);
