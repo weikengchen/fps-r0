@@ -210,7 +210,7 @@ pub fn montgomery_mul(out: &mut [u32; 69], in1: &[u32; 64], in2: &[u32; 64], alw
                     OP_MULTIPLY,
                     a.as_ptr() as *const [u32; BIGINT_WIDTH_WORDS],
                     b.as_ptr() as *const [u32; BIGINT_WIDTH_WORDS],
-                    &[0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32],
+                    &[0u32; 8],
                 );
             }
 
@@ -281,7 +281,7 @@ pub fn montgomery_mul(out: &mut [u32; 69], in1: &[u32; 64], in2: &[u32; 64], alw
                     OP_MULTIPLY,
                     m.as_ptr() as *const [u32; BIGINT_WIDTH_WORDS],
                     transmute::<&u32, &[u32; 8]>(&N[j * 8]).as_ptr() as *const [u32; BIGINT_WIDTH_WORDS],
-                    &[0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32],
+                    &[0u32; 8],
                 );
             }
 
