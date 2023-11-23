@@ -5,11 +5,14 @@ use risc0_zkvm::guest::env;
 use alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 use base64ct::{Base64, Encoding};
-use num_bigint_dig::BigUint;
+use num_bigint::BigUint;
+use core::mem::transmute;
 
 risc0_zkvm::guest::entry!(main);
 
 mod dkim;
+
+mod rsa;
 
 #[derive(Serialize, Deserialize)]
 pub struct Witness {
@@ -24,7 +27,7 @@ pub struct Witness {
     pub dkim_timestamp: Vec<u8>,
     pub bh_base64: Vec<u8>,
     pub receipt_number: Vec<u8>,
-    pub signature: Vec<u8>
+    pub signature_mont: Vec<u8>
 }
 
 fn check_no_rn(data: &[u8]) -> bool {
@@ -136,78 +139,158 @@ fn main() {
     let decoded = Base64::decode(&witness.bh_base64, &mut dec_buf).unwrap();
     assert_eq!(decoded, body_hash);
 
-    const N_ELEMS: [u32; 64] = [
-        3493812455u32,
-        3529997461u32,
-        710143587u32,
-        2792692495u32,
-        1885047707u32,
-        3553628773u32,
-        2204079629u32,
-        699911535u32,
-        3275286756u32,
-        2670964040u32,
-        380836659u32,
-        1539088076u32,
-        257233178u32,
-        102057303u32,
-        3498423094u32,
-        347591143u32,
-        118634769u32,
-        2922120165u32,
-        4044052678u32,
-        3306267357u32,
-        3299705609u32,
-        2232715160u32,
-        2567218027u32,
-        57867452u32,
-        3266166781u32,
-        2351768864u32,
-        296981719u32,
-        1570354344u32,
-        4098249795u32,
-        2000361393u32,
-        1479034620u32,
-        3336008768u32,
-        2938032753u32,
-        3528598023u32,
-        1304193507u32,
-        121827407u32,
-        514584826u32,
-        1603753032u32,
-        1664712145u32,
-        3527467765u32,
-        2821704060u32,
-        729040642u32,
-        2110748820u32,
-        3709644666u32,
-        4149792411u32,
-        1565350608u32,
-        3206857463u32,
-        792901230u32,
-        3569404149u32,
-        1620994961u32,
-        33783729u32,
-        1281610576u32,
-        468794176u32,
-        1193160222u32,
-        3636051391u32,
-        2450661453u32,
-        4242348214u32,
-        2150858390u32,
-        1813504491u32,
-        305305593u32,
-        1673370015u32,
-        1864962247u32,
-        2629885700u32,
-        2947918631u32,
-    ];
-    let n = BigUint::from_slice(&N_ELEMS);
-    let sig: BigUint = BigUint::from_bytes_be(&witness.signature);
+    let sig_mont: BigUint = BigUint::from_bytes_le(&witness.signature_mont);
 
-    eprintln!("before modpow: {}", env::get_cycle_count());
-    let msg = BigUint::modpow(&sig, &BigUint::from(65537u32), &n);
-    eprintln!("after modpow: {}", env::get_cycle_count());
+    let mut sig_mont_limbs = [0u32; 64];
+    sig_mont_limbs.copy_from_slice(&sig_mont.to_u32_digits());
+
+    let mut cur_limbs = [0u32; 66];
+    let mut cur2_limbs = [0u32; 66];
+
+    // cur = ^2
+    rsa::montgomery_mul(&mut cur_limbs, &sig_mont_limbs, &sig_mont_limbs);
+    // cur2 = ^4
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur2_limbs,
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+        );
+    }
+    // cur = ^8
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur_limbs,
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+        );
+    }
+    // cur2 = ^16
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur2_limbs,
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+        );
+    }
+    // cur = ^32
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur_limbs,
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+        );
+    }
+    // cur2 = ^64
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur2_limbs,
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+        );
+    }
+    // cur = ^128
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur_limbs,
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+        );
+    }
+    // cur2 = ^256
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur2_limbs,
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+        );
+    }
+    // cur = ^512
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur_limbs,
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+        );
+    }
+    // cur2 = ^1024
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur2_limbs,
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+        );
+    }
+    // cur = ^2048
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur_limbs,
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+        );
+    }
+    // cur2 = ^4096
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur2_limbs,
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+        );
+    }
+    // cur = ^8192
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur_limbs,
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+        );
+    }
+    // cur2 = ^16384
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur2_limbs,
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+        );
+    }
+    // cur = ^32768
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur_limbs,
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+        );
+    }
+    // cur2 = ^65536
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur2_limbs,
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+        );
+    }
+    // cur = ^65537
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur_limbs,
+            transmute::<&u32, &[u32;64]>(&cur2_limbs[0]),
+            &sig_mont_limbs,
+        );
+    }
+
+    let mut one = [0u32; 64];
+    one[0] = 1;
+
+    // cur removed montgomery
+    unsafe {
+        rsa::montgomery_mul(
+            &mut cur2_limbs,
+            transmute::<&u32, &[u32;64]>(&cur_limbs[0]),
+            &one,
+        );
+    }
+
+    let msg = BigUint::from_slice(&cur2_limbs[0..64]);
 
     assert!(check_no_rn(&witness.comment_line));
     assert!(check_no_comma(&witness.name));
