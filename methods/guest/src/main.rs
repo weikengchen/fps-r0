@@ -144,8 +144,8 @@ fn main() {
     let mut sig_mont_limbs = [0u32; 64];
     sig_mont_limbs.copy_from_slice(&sig_mont.to_u32_digits());
 
-    let mut cur_limbs = [0u32; 66];
-    let mut cur2_limbs = [0u32; 66];
+    let mut cur_limbs = [0u32; 69];
+    let mut cur2_limbs = [0u32; 69];
 
     // cur = ^2
     rsa::montgomery_mul(&mut cur_limbs, &sig_mont_limbs, &sig_mont_limbs);

@@ -1,8 +1,8 @@
-use serde::{Serialize, Deserialize};
-use num_bigint_dig::BigUint;
 use core::str::FromStr;
 use methods::{METHOD_ELF, METHOD_ID};
+use num_bigint_dig::BigUint;
 use risc0_zkvm::{default_prover, ExecutorEnv};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct Witness {
@@ -17,7 +17,7 @@ pub struct Witness {
     pub dkim_timestamp: Vec<u8>,
     pub bh_base64: Vec<u8>,
     pub receipt_number: Vec<u8>,
-    pub signature_mont: Vec<u8>
+    pub signature_mont: Vec<u8>,
 }
 
 fn main() {
