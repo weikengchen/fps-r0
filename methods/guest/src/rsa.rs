@@ -28,10 +28,10 @@ pub fn add_small<const I: usize, const J: usize>(accm: &mut [u32; I], new: &[u32
 
 #[inline(always)]
 pub fn add32_and_overflow(a: u32, b: u32, carry: u32) -> (u32, u32) {
-    let (v, carry1) = a.overflowing_add(b);
-    let (v2, carry2) = v.overflowing_add(carry);
-    ((carry1 || carry2) as u32, v2)
+    let v = (a as u64).wrapping_add(b as u64).wrapping_add(carry as u64);
+    ((v >> 32) as u32, (v & 0xffffffff) as u32)
 }
+
 
 #[inline(always)]
 pub fn add_small_with_overflow<const I: usize, const J: usize>(accm: &mut [u32; I], new: &[u32; J]) -> u32 {
@@ -265,21 +265,7 @@ pub fn montgomery_mul(out: &mut [u32; 69], in1: &[u32; 64], in2: &[u32; 64]) {
             }
         }
 
-        // j = 0
-        {
-            // m * n[j]
-            unsafe {
-                sys_bigint(
-                    res.as_mut_ptr() as *mut [u32; BIGINT_WIDTH_WORDS],
-                    OP_MULTIPLY,
-                    m.as_ptr() as *const [u32; BIGINT_WIDTH_WORDS],
-                    transmute::<&u32, &[u32; 8]>(&N[0]).as_ptr() as *const [u32; BIGINT_WIDTH_WORDS],
-                    &[0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32, 0xffffffffu32],
-                );
-            }
-        }
-
-        for j in 1..16 {
+        for j in 0..16 {
             // m * n[j]
             unsafe {
                 sys_bigint(
