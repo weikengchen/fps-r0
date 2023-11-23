@@ -1,12 +1,12 @@
 //#![no_std]
 
 extern crate alloc;
-use risc0_zkvm::guest::env;
 use alloc::vec::Vec;
-use serde::{Deserialize, Serialize};
 use base64ct::{Base64, Encoding};
-use num_bigint::BigUint;
 use core::mem::transmute;
+use num_bigint::BigUint;
+use risc0_zkvm::guest::env;
+use serde::{Deserialize, Serialize};
 
 risc0_zkvm::guest::entry!(main);
 
@@ -27,7 +27,7 @@ pub struct Witness {
     pub dkim_timestamp: Vec<u8>,
     pub bh_base64: Vec<u8>,
     pub receipt_number: Vec<u8>,
-    pub signature_mont: Vec<u8>
+    pub signature_mont: Vec<u8>,
 }
 
 fn check_no_rn(data: &[u8]) -> bool {
@@ -95,13 +95,14 @@ fn main() {
     let mut extended_middle_paragraph = Vec::<u8>::with_capacity(512);
 
     while middle_paragraph_len > 74 {
-        extended_middle_paragraph.extend_from_slice(&middle_paragraph[cur..cur+74]);
+        extended_middle_paragraph.extend_from_slice(&middle_paragraph[cur..cur + 74]);
         extended_middle_paragraph.extend_from_slice(b"=\r\n");
         cur += 74;
         middle_paragraph_len -= 74;
     }
     if middle_paragraph_len != 0 {
-        extended_middle_paragraph.extend_from_slice(&middle_paragraph[cur..cur + middle_paragraph_len]);
+        extended_middle_paragraph
+            .extend_from_slice(&middle_paragraph[cur..cur + middle_paragraph_len]);
     }
 
     let mut body = Vec::<u8>::with_capacity(512);
@@ -118,22 +119,28 @@ fn main() {
     let mut header = Vec::<u8>::with_capacity(512);
     header.extend_from_slice(b"date:");
     header.extend_from_slice(&witness.date_head);
-    header.extend_from_slice(b"\r\nfrom:Standard Chartered Alerts <OnlineBanking.HK@sc.com>\r\nto:");
+    header
+        .extend_from_slice(b"\r\nfrom:Standard Chartered Alerts <OnlineBanking.HK@sc.com>\r\nto:");
     header.extend_from_slice(&witness.receiver);
     header.extend_from_slice(b"\r\nmessage-id:");
     header.extend_from_slice(&witness.message_id);
     header.extend_from_slice(b"\r\nsubject:=?UTF-8?Q?Send_Money_via_Standard_Chartered_?= =?UTF-8?Q?Pay_=E2=80=93_Receipt_No._");
     header.extend_from_slice(&witness.receipt_number);
-    header.extend_from_slice(b"?=\r\nmime-version:1.0\r\ncontent-type:multipart/mixed; boundary=\"----=_Part_");
+    header.extend_from_slice(
+        b"?=\r\nmime-version:1.0\r\ncontent-type:multipart/mixed; boundary=\"----=_Part_",
+    );
     header.extend_from_slice(&witness.comment_line);
     header.extend_from_slice(b"\"\r\n");
 
     let mut original_header = Vec::<u8>::with_capacity(512);
-    original_header.extend_from_slice(b"dkim-signature:v=1; a=rsa-sha256; c=relaxed/relaxed; d=sc.com; s=k06k22gbledmsml; t=");
+    original_header.extend_from_slice(
+        b"dkim-signature:v=1; a=rsa-sha256; c=relaxed/relaxed; d=sc.com; s=k06k22gbledmsml; t=",
+    );
     original_header.extend_from_slice(&witness.dkim_timestamp);
     original_header.extend_from_slice(b"; i=@sc.com; bh=");
     original_header.extend_from_slice(&witness.bh_base64);
-    original_header.extend_from_slice(b"; h=Date:From:To:Message-ID:Subject:MIME-Version:Content-Type; b=");
+    original_header
+        .extend_from_slice(b"; h=Date:From:To:Message-ID:Subject:MIME-Version:Content-Type; b=");
 
     let data_hash = dkim::data_hash_sha256(&header, &original_header);
 
@@ -189,8 +196,8 @@ fn main() {
         let mut sig_mont_limbs = [0u32; 64];
         sig_mont_limbs.copy_from_slice(&sig_mont.to_u32_digits());
 
-        let mut cur_limbs = [0u32; 69];
-        let mut cur2_limbs = [0u32; 69];
+        let mut cur_limbs = [0u32; 73];
+        let mut cur2_limbs = [0u32; 73];
 
         // cur = ^2
         rsa::montgomery_mul(&mut cur_limbs, &sig_mont_limbs, &sig_mont_limbs, false);
@@ -200,7 +207,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
-                false
+                false,
             );
         }
         // cur = ^8
@@ -209,7 +216,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
-                false
+                false,
             );
         }
         // cur2 = ^16
@@ -218,7 +225,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
-                false
+                false,
             );
         }
         // cur = ^32
@@ -227,7 +234,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
-                false
+                false,
             );
         }
         // cur2 = ^64
@@ -236,7 +243,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
-                false
+                false,
             );
         }
         // cur = ^128
@@ -245,7 +252,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
-                false
+                false,
             );
         }
         // cur2 = ^256
@@ -254,7 +261,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
-                false
+                false,
             );
         }
         // cur = ^512
@@ -263,7 +270,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
-                false
+                false,
             );
         }
         // cur2 = ^1024
@@ -272,7 +279,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
-                false
+                false,
             );
         }
         // cur = ^2048
@@ -281,7 +288,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
-                false
+                false,
             );
         }
         // cur2 = ^4096
@@ -290,7 +297,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
-                false
+                false,
             );
         }
         // cur = ^8192
@@ -299,7 +306,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
-                false
+                false,
             );
         }
         // cur2 = ^16384
@@ -308,7 +315,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
-                false
+                false,
             );
         }
         // cur = ^32768
@@ -317,7 +324,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
-                false
+                false,
             );
         }
         // cur2 = ^65536
@@ -326,7 +333,7 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
-                false
+                false,
             );
         }
         // cur = ^65537
@@ -335,7 +342,7 @@ fn main() {
                 &mut cur_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur2_limbs[0]),
                 &sig_mont_limbs,
-                false
+                false,
             );
         }
 
@@ -348,15 +355,15 @@ fn main() {
                 &mut cur2_limbs,
                 transmute::<&u32, &[u32; 64]>(&cur_limbs[0]),
                 &one,
-                true
+                true,
             );
         }
         let msg = BigUint::from_slice(&cur2_limbs[0..64]);
         let msg2 = BigUint::from_bytes_be(&msg_bytes);
+        eprintln!("total: {}", env::get_cycle_count());
         assert_eq!(msg, msg2);
     } else {
         env::commit_slice(&msg_bytes);
     }
-
     eprintln!("total: {}", env::get_cycle_count());
 }
