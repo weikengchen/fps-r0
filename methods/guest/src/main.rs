@@ -71,7 +71,7 @@ fn check_no_semicolon(data: &[u8]) -> bool {
 }
 
 fn main() {
-    const CHECK_SIGNATURE_FLAG: bool = false;
+    const CHECK_SIGNATURE_FLAG: bool = true;
 
     let witness: Witness = env::read();
 

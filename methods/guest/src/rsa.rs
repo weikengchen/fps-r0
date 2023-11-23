@@ -32,7 +32,6 @@ pub fn add32_and_overflow(a: u32, b: u32, carry: u32) -> (u32, u32) {
     ((v >> 32) as u32, (v & 0xffffffff) as u32)
 }
 
-
 #[inline(always)]
 pub fn add_small_with_overflow<const I: usize, const J: usize>(accm: &mut [u32; I], new: &[u32; J]) -> u32 {
     let mut carry = 0;
@@ -199,10 +198,10 @@ pub fn montgomery_mul(out: &mut [u32; 69], in1: &[u32; 64], in2: &[u32; 64], alw
     for i in 0..16 {
         // C := 0
         let mut carry = [0u32; 4];
+        let b = [in2[i * 4], in2[i * 4 + 1], in2[i * 4 + 2], in2[i * 4 + 3], 0u32, 0, 0, 0];
 
         for j in 0..16 {
             let a = [in1[j * 4], in1[j * 4 + 1], in1[j * 4 + 2], in1[j * 4 + 3], 0u32, 0, 0, 0];
-            let b = [in2[i * 4], in2[i * 4 + 1], in2[i * 4 + 2], in2[i * 4 + 3], 0u32, 0, 0, 0];
 
             // a[j] * b[i]
             unsafe {
@@ -216,7 +215,9 @@ pub fn montgomery_mul(out: &mut [u32; 69], in1: &[u32; 64], in2: &[u32; 64], alw
             }
 
             // a[j] * b[i] + carry
-            add_small::<8, 4>(&mut res, &carry);
+            if j != 0 {
+                add_small::<8, 4>(&mut res, &carry);
+            }
 
             // (C,S) := t[j] + a[j]*b[i] + C
             // t[j] := S
@@ -227,11 +228,18 @@ pub fn montgomery_mul(out: &mut [u32; 69], in1: &[u32; 64], in2: &[u32; 64], alw
                 );
 
                 // update C
-                let (cur, mut new_carry_bit) = res[4].overflowing_add(new_carry);
-                carry[0] = cur;
-                (carry[1], new_carry_bit) = res[5].overflowing_add(new_carry_bit as u32);
-                (carry[2], new_carry_bit) = res[6].overflowing_add(new_carry_bit as u32);
-                carry[3] = res[7].wrapping_add(new_carry_bit as u32);
+                if new_carry == 0 {
+                    carry[0] = res[4];
+                    carry[1] = res[5];
+                    carry[2] = res[6];
+                    carry[3] = res[7];
+                } else {
+                    let (cur, mut new_carry_bit) = res[4].overflowing_add(1 as u32);
+                    carry[0] = cur;
+                    (carry[1], new_carry_bit) = res[5].overflowing_add(new_carry_bit as u32);
+                    (carry[2], new_carry_bit) = res[6].overflowing_add(new_carry_bit as u32);
+                    carry[3] = res[7].wrapping_add(new_carry_bit as u32);
+                }
             }
         }
 
@@ -278,7 +286,9 @@ pub fn montgomery_mul(out: &mut [u32; 69], in1: &[u32; 64], in2: &[u32; 64], alw
             }
 
             // m * n[j] + carry
-            add_small::<8, 4>(&mut res, &carry);
+            if j != 0 {
+                add_small::<8, 4>(&mut res, &carry);
+            }
 
             // (C,S) := t[j] + m * n[j] + C
             // t[j] := S
@@ -289,11 +299,18 @@ pub fn montgomery_mul(out: &mut [u32; 69], in1: &[u32; 64], in2: &[u32; 64], alw
                 );
 
                 // update C
-                let (cur, mut new_carry_bit) = res[4].overflowing_add(new_carry);
-                carry[0] = cur;
-                (carry[1], new_carry_bit) = res[5].overflowing_add(new_carry_bit as u32);
-                (carry[2], new_carry_bit) = res[6].overflowing_add(new_carry_bit as u32);
-                carry[3] = res[7].wrapping_add(new_carry_bit as u32);
+                if new_carry == 0 {
+                    carry[0] = res[4];
+                    carry[1] = res[5];
+                    carry[2] = res[6];
+                    carry[3] = res[7];
+                } else {
+                    let (cur, mut new_carry_bit) = res[4].overflowing_add(1 as u32);
+                    carry[0] = cur;
+                    (carry[1], new_carry_bit) = res[5].overflowing_add(new_carry_bit as u32);
+                    (carry[2], new_carry_bit) = res[6].overflowing_add(new_carry_bit as u32);
+                    carry[3] = res[7].wrapping_add(new_carry_bit as u32);
+                }
             }
         }
 
