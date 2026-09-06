@@ -64,7 +64,9 @@ fn main() {
     let prover = default_prover();
 
     let timer = std::time::Instant::now();
-    let receipt = prover.prove_elf(env, METHOD_ELF).unwrap();
+    // prove() replaces prove_elf() from 0.19 and returns ProveInfo.
+    let prove_info = prover.prove(env, METHOD_ELF).unwrap();
+    let receipt = prove_info.receipt;
     println!("time: {}", timer.elapsed().as_secs_f64());
     receipt.verify(METHOD_ID).unwrap();
 }
