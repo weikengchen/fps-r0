@@ -360,10 +360,10 @@ fn main() {
         }
         let msg = BigUint::from_slice(&cur2_limbs[0..64]);
         let msg2 = BigUint::from_bytes_be(&msg_bytes);
-        eprintln!("total: {}", env::get_cycle_count());
+        eprintln!("total: {}", env::cycle_count());
         assert_eq!(msg, msg2);
     } else {
         env::commit_slice(&msg_bytes);
     }
-    eprintln!("total: {}", env::get_cycle_count());
+    eprintln!("total: {}", env::cycle_count());
 }
